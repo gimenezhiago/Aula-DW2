@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSP Solver - Problema do Caixeiro Viajante</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 0;
+            height: 70vh;
+        }
+
+        .map-container {
+            position: relative;
+            background: #f8f9fa;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 30px;
+            border-left: 1px solid #dee2e6;
+            overflow-y: auto;
+        }
+
+        .control-group {
+            margin-bottom: 30px;
+        }
+
+        .control-group h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #219a52);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .points-list {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid #dee2e6;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .point-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .point-item.origin {
+            border-left-color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        .remove-point {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .results {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid #dee2e6;
+        }
+
+        .results h4 {
+            color: #27ae60;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .distance-info {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status {
+            background: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            #map {
+                height: 50vh;
+            }
+            
+            .controls {
+                border-left: none;
+                border-top: 1px solid #dee2e6;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ TSP Solver</h1>
+            <p>Problema do Caixeiro Viajante - Otimização de Rotas</p>
+            <p style="font-size: 0.9rem; margin-top: 10px; opacity: 0.8;">
+                Inspirado na apresentação de Antônio Marcos - GPC/FPS
+            </p>
+        </div>
+        
+        <div class="content">
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <h3>🎯 Instruções</h3>
+                    <div class="status">
+                        <strong>1.</strong> Defina o ponto de origem (vermelho)<br>
+                        <strong>2.</strong> Adicione destinos clicando no mapa<br>
+                        <strong>3.</strong> Execute o algoritmo TSP
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>⚙️ Controles</h3>
+                    <button class="btn btn-primary" id="setOriginBtn">
+                        📍 Definir Ponto de Origem
+                    </button>
+                    <button class="btn btn-primary" id="addPointBtn">
+                        ➕ Adicionar Destino
+                    </button>
+                    <button class="btn btn-success" id="solveBtn" disabled>
+                        🚀 Resolver TSP
+                    </button>
+                    <button class="btn btn-danger" id="clearBtn">
+                        🗑️ Limpar Tudo
+                    </button>
+                </div>
+
+                <div class="control-group">
+                    <h3>📍 Pontos Adicionados</h3>
+                    <div class="points-list" id="pointsList">
+                        <p style="color: #666; text-align: center;">
+                            Nenhum ponto adicionado ainda
+                        </p>
+                    </div>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Calculando rota otimizada...</p>
+                </div>
+
+                <div class="results" id="results" style="display: none;">
+                    <h4>📊 Resultados</h4>
+                    <div id="routeOrder"></div>
+                    <div class="distance-info" id="totalDistance"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TSPSolver {
+            constructor() {
+                this.map = null;
+                this.points = [];
+                this.origin = null;
+                this.markers = [];
+                this.currentMode = 'none';
+                this.routePolyline = null;
+                
+                this.initMap();
+                this.initEvents();
+            }
+
+            initMap() {
+                // Coordenadas da FPS (Faculdade Pernambucana de Saúde)
+                const fpsCoords = [-8.0538, -34.8851];
+                
+                this.map = L.map('map').setView(fpsCoords, 13);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(this.map);
+
+                this.map.on('click', (e) => this.handleMapClick(e));
+            }
+
+            initEvents() {
+                document.getElementById('setOriginBtn').addEventListener('click', () => {
+                    this.currentMode = 'origin';
+                    this.updateStatus('Clique no mapa para definir o ponto de origem');
+                });
+
+                document.getElementById('addPointBtn').addEventListener('click', () => {
+                    this.currentMode = 'point';
+                    this.updateStatus('Clique no mapa para adicionar um destino');
+                });
+
+                document.getElementById('solveBtn').addEventListener('click', () => {
+                    this.solveTSP();
+                });
+
+                document.getElementById('clearBtn').addEventListener('click', () => {
+                    this.clearAll();
+                });
+            }
+
+            handleMapClick(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+
+                if (this.currentMode === 'origin') {
+                    this.setOrigin(lat, lng);
+                } else if (this.currentMode === 'point') {
+                    this.addPoint(lat, lng);
+                }
+                
+                this.currentMode = 'none';
+                this.updatePointsList();
+                this.updateButtons();
+            }
+
+            setOrigin(lat, lng) {
+                if (this.origin && this.origin.marker) {
+                    this.map.removeLayer(this.origin.marker);
+                }
+
+                const marker = L.marker([lat, lng], {
+                    icon: L.icon({
+                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#e74c3c" width="24" height="24">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                        `),
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30]
+                    })
+                }).addTo(this.map);
+
+                this.origin = { lat, lng, marker };
+                this.updateStatus('Ponto de origem definido! Adicione destinos.');
+            }
+
+            addPoint(lat, lng) {
+                const marker = L.marker([lat, lng], {
+                    icon: L.icon({
+                        iconUrl: 'data:image/svg+xml;base64=' + btoa(`
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#3498db" width="24" height="24">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                        `),
+                        iconSize: [25, 25],
+                        iconAnchor: [12.5, 25]
+                    })
+                }).addTo(this.map);
+
+                this.points.push({ lat, lng, marker, id: Date.now() });
+                this.updateStatus(`Destino adicionado! Total: ${this.points.length} destinos`);
+            }
+
+            updatePointsList() {
+                const listContainer = document.getElementById('pointsList');
+                
+                if (!this.origin && this.points.length === 0) {
+                    listContainer.innerHTML = '<p style="color: #666; text-align: center;">Nenhum ponto adicionado ainda</p>';
+                    return;
+                }
+
+                let html = '';
+                
+                if (this.origin) {
+                    html += `
+                        <div class="point-item origin">
+                            <span><strong>🏠 Origem:</strong> ${this.origin.lat.toFixed(4)}, ${this.origin.lng.toFixed(4)}</span>
+                        </div>
+                    `;
+                }
+
+                this.points.forEach((point, index) => {
+                    html += `
+                        <div class="point-item">
+                            <span><strong>📍 Destino ${index + 1}:</strong> ${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}</span>
+                            <button class="remove-point" onclick="tspSolver.removePoint(${point.id})">❌</button>
+                        </div>
+                    `;
+                });
+
+                listContainer.innerHTML = html;
+            }
+
+            removePoint(id) {
+                const index = this.points.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    this.map.removeLayer(this.points[index].marker);
+                    this.points.splice(index, 1);
+                    this.updatePointsList();
+                    this.updateButtons();
+                    this.clearRoute();
+                }
+            }
+
+            updateButtons() {
+                const solveBtn = document.getElementById('solveBtn');
+                solveBtn.disabled = !this.origin || this.points.length < 2;
+            }
+
+            updateStatus(message) {
+                // Simula feedback visual
+                console.log(message);
+            }
+
+            // Implementação simplificada do TSP usando algoritmo nearest neighbor
+            solveTSP() {
+                if (!this.origin || this.points.length < 2) return;
+
+                document.getElementById('loading').classList.add('active');
+                document.getElementById('results').style.display = 'none';
+
+                setTimeout(() => {
+                    const solution = this.nearestNeighborTSP();
+                    this.displayResults(solution);
+                    document.getElementById('loading').classList.remove('active');
+                }, 1500);
+            }
+
+            nearestNeighborTSP() {
+                const allPoints = [this.origin, ...this.points];
+                const n = allPoints.length;
+                
+                // Matriz de distâncias
+                const distances = this.calculateDistanceMatrix(allPoints);
+                
+                // Algoritmo nearest neighbor começando da origem (índice 0)
+                const visited = new Array(n).fill(false);
+                const route = [0];
+                visited[0] = true;
+                
+                let current = 0;
+                let totalDistance = 0;
+                
+                for (let i = 1; i < n; i++) {
+                    let nearest = -1;
+                    let minDistance = Infinity;
+                    
+                    for (let j = 1; j < n; j++) {
+                        if (!visited[j] && distances[current][j] < minDistance) {
+                            minDistance = distances[current][j];
+                            nearest = j;
+                        }
+                    }
+                    
+                    route.push(nearest);
+                    visited[nearest] = true;
+                    totalDistance += minDistance;
+                    current = nearest;
+                }
+                
+                // Retorna à origem
+                totalDistance += distances[current][0];
+                route.push(0);
+                
+                return {
+                    route: route,
+                    distance: totalDistance,
+                    coordinates: route.map(i => allPoints[i])
+                };
+            }
+
+            calculateDistanceMatrix(points) {
+                const n = points.length;
+                const matrix = Array(n).fill().map(() => Array(n).fill(0));
+                
+                for (let i = 0; i < n; i++) {
+                    for (let j = 0; j < n; j++) {
+                        if (i !== j) {
+                            matrix[i][j] = this.haversineDistance(
+                                points[i].lat, points[i].lng,
+                                points[j].lat, points[j].lng
+                            );
+                        }
+                    }
+                }
+                
+                return matrix;
+            }
+
+            haversineDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371; // Raio da Terra em km
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+
+            displayResults(solution) {
+                const resultsDiv = document.getElementById('results');
+                const routeOrderDiv = document.getElementById('routeOrder');
+                const totalDistanceDiv = document.getElementById('totalDistance');
+                
+                // Mostrar ordem da rota
+                let routeHtml = '<div class="result-item"><strong>Sequência da Rota:</strong></div>';
+                solution.route.forEach((pointIndex, index) => {
+                    const isOrigin = pointIndex === 0;
+                    const label = isOrigin ? '🏠 Origem' : `📍 Destino ${pointIndex}`;
+                    
+                    routeHtml += `
+                        <div class="result-item">
+                            <span>${index + 1}. ${label}</span>
+                        </div>
+                    `;
+                });
+                
+                routeOrderDiv.innerHTML = routeHtml;
+                totalDistanceDiv.innerHTML = `Distância Total: ${solution.distance.toFixed(1)} km`;
+                
+                // Desenhar rota no mapa
+                this.drawRoute(solution.coordinates);
+                
+                resultsDiv.style.display = 'block';
+            }
+
+            drawRoute(coordinates) {
+                this.clearRoute();
+                
+                const latlngs = coordinates.map(coord => [coord.lat, coord.lng]);
+                
+                this.routePolyline = L.polyline(latlngs, {
+                    color: '#e74c3c',
+                    weight: 4,
+                    opacity: 0.8,
+                    dashArray: '10, 10'
+                }).addTo(this.map);
+                
+                // Ajustar zoom para mostrar toda a rota
+                this.map.fitBounds(this.routePolyline.getBounds(), { padding: [20, 20] });
+            }
+
+            clearRoute() {
+                if (this.routePolyline) {
+                    this.map.removeLayer(this.routePolyline);
+                    this.routePolyline = null;
+                }
+            }
+
+            clearAll() {
+                // Remove origem
+                if (this.origin && this.origin.marker) {
+                    this.map.removeLayer(this.origin.marker);
+                }
+                this.origin = null;
+                
+                // Remove todos os pontos
+                this.points.forEach(point => {
+                    this.map.removeLayer(point.marker);
+                });
+                this.points = [];
+                
+                // Remove rota
+                this.clearRoute();
+                
+                // Reset UI
+                document.getElementById('results').style.display = 'none';
+                document.getElementById('loading').classList.remove('active');
+                this.updatePointsList();
+                this.updateButtons();
+                
+                // Volta para coordenadas da FPS
+                this.map.setView([-8.0538, -34.8851], 13);
+            }
+        }
+
+        // Inicializar aplicação
+        const tspSolver = new TSPSolver();
+    </script>
+</body>
+</html>
