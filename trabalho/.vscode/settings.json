@@ -1,0 +1,8 @@
+{
+    "files.autoSave": "afterDelay",
+    "workbench.colorTheme": "Monokai Dimmed",
+    "editor.fontSize": 11,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "files.eol": "\n",
+    "editor.formatOnSave": true,
+}
